@@ -1,0 +1,44 @@
+name: Build iPad Process Simulator
+on:
+  push:
+    branches: [fix/ipad-touch-support-20261107, main]
+    paths:
+      - 'tools/build_ipad.py'
+      - 'Process_Simulator_Repaired.html'
+      - '.github/workflows/build-ipad.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build iPad edition
+        run: python tools/build_ipad.py
+      - name: Validate generated HTML
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("Process_Simulator_iPad.html").read_text()
+          assert 'id="layoutCanvas"' in s
+          assert 'id="psIpadTouchHandlers"' in s
+          assert 'psInPageFullscreen' in s
+          assert s.count("</html>")==1
+          print("Static iPad build assertions passed")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Process_Simulator_iPad
+          path: Process_Simulator_iPad.html
+          retention-days: 30
+      - name: Publish iPad HTML on branch
+        if: github.ref_name == 'fix/ipad-touch-support-20261107'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Process_Simulator_iPad.html
+          git diff --cached --quiet || (git commit -m 'Publish generated iPad simulator' && git push)
