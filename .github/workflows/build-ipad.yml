@@ -7,6 +7,8 @@ on:
       - 'Process_Simulator_Repaired.html'
       - '.github/workflows/build-ipad.yml'
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,3 +35,10 @@ jobs:
           name: Process_Simulator_iPad
           path: Process_Simulator_iPad.html
           retention-days: 30
+      - name: Publish iPad HTML on branch
+        if: github.ref_name == 'fix/ipad-touch-support-20261107'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Process_Simulator_iPad.html
+          git diff --cached --quiet || (git commit -m 'Publish generated iPad simulator' && git push)
